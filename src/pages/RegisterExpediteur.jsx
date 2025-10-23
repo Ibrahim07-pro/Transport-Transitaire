@@ -1,18 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerExpediteur } from "../services/authServiceExpediteur";
+import CustomSnackbar from "../components/CustomSnackbar";
 
 export default function RegisterExpediteur() {
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [telephone, setTelephone] = useState("");
+  const [email, setEmail] = useState(""); // ✅ Ajout email
   const [motDePasse, setMotDePasse] = useState("");
   const [numeroCnib, setNumeroCnib] = useState("");
   const [cnibRectoFile, setCnibRectoFile] = useState(null);
   const [cnibVersoFile, setCnibVersoFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [erreur, setErreur] = useState("");
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   const navigate = useNavigate();
 
@@ -24,8 +32,8 @@ export default function RegisterExpediteur() {
   };
 
   const handleRegister = async () => {
-    if (!nom || !prenom || !telephone || !motDePasse || !numeroCnib || !cnibRectoFile || !cnibVersoFile) {
-      setErreur("Veuillez remplir tous les champs et sélectionner vos fichiers CNIB");
+    if (!nom || !prenom || !telephone || !email || !motDePasse || !numeroCnib || !cnibRectoFile || !cnibVersoFile) {
+      setSnackbar({ open: true, message: "Veuillez remplir tous les champs et sélectionner vos fichiers CNIB", severity: "warning" });
       return;
     }
 
@@ -33,19 +41,20 @@ export default function RegisterExpediteur() {
     formData.append("nom", nom);
     formData.append("prenom", prenom);
     formData.append("telephone", telephone);
+    formData.append("email", email); // ✅ Ajout email
     formData.append("motDePasse", motDePasse);
     formData.append("numeroCNIB", numeroCnib);
     formData.append("cnibRecto", cnibRectoFile);
     formData.append("cnibVerso", cnibVersoFile);
 
     setLoading(true);
-    setErreur("");
 
     try {
       await registerExpediteur(formData);
-      navigate("/");
+      setSnackbar({ open: true, message: "Inscription réussie ✅", severity: "success" });
+      setTimeout(() => navigate("/"), 1000);
     } catch (e) {
-      setErreur(e.message);
+      setSnackbar({ open: true, message: e.message || "Erreur lors de l'inscription", severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -61,19 +70,6 @@ export default function RegisterExpediteur() {
     color: "#000",
     fontSize: 16,
     boxSizing: "border-box"
-  };
-
-  const fileCardStyle = {
-    padding: 12,
-    border: "2px solid #ff8800",
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    minHeight: 60,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 14,
-    color: "#333"
   };
 
   return (
@@ -99,12 +95,12 @@ export default function RegisterExpediteur() {
       }}>
         <h1 style={{ color: "#ff8800", textAlign: "center", fontSize: 28 }}>Inscription Transitaire</h1>
 
-        {erreur && <div style={{ color: "#c00", backgroundColor: "#fdd", padding: 10, borderRadius: 8, textAlign: "center" }}>{erreur}</div>}
-
+        {/* Champs */}
         <input type="text" placeholder="Nom" value={nom} onChange={(e) => setNom(e.target.value)} style={inputStyle} />
         <input type="text" placeholder="Prénom" value={prenom} onChange={(e) => setPrenom(e.target.value)} style={inputStyle} />
         <input type="tel" placeholder="Téléphone" value={telephone} onChange={(e) => setTelephone(e.target.value.replace("+", ""))} style={inputStyle} />
-
+        <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} /> {/* ✅ Email */}
+        
         <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
           <input
             type={showPassword ? "text" : "password"}
@@ -124,76 +120,7 @@ export default function RegisterExpediteur() {
 
         <input type="text" placeholder="Numéro CNIB" value={numeroCnib} onChange={(e) => setNumeroCnib(e.target.value)} style={inputStyle} />
 
-       {/* Fichiers CNIB */}
-<div style={{ display: "flex", gap: 16 }}>
-  {/* CNIB Recto */}
-  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-    <span style={{ fontWeight: "bold", color: "#ff8800", fontSize: 16 }}>CNIB Recto</span>
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => handleFileChange(e, true)}
-      style={{ display: "none" }}
-      id="cnibRectoInput"
-    />
-    <div
-      onClick={() => document.getElementById("cnibRectoInput").click()}
-      style={{
-        padding: 12,
-        border: "2px solid #ff8800",
-        borderRadius: 8,
-        backgroundColor: "#fff",
-        minHeight: 60,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 14,
-        color: "#333",
-        cursor: "pointer",
-        transition: "0.2s",
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff7e6"}
-      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-    >
-      {cnibRectoFile ? cnibRectoFile.name : "Cliquez ici pour télécharger le recto"}
-    </div>
-  </div>
-
-  {/* CNIB Verso */}
-  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-    <span style={{ fontWeight: "bold", color: "#ff8800", fontSize: 16 }}>CNIB Verso</span>
-    <input
-      type="file"
-      accept="image/*"
-      onChange={(e) => handleFileChange(e, false)}
-      style={{ display: "none" }}
-      id="cnibVersoInput"
-    />
-    <div
-      onClick={() => document.getElementById("cnibVersoInput").click()}
-      style={{
-        padding: 12,
-        border: "2px solid #ff8800",
-        borderRadius: 8,
-        backgroundColor: "#fff",
-        minHeight: 60,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontSize: 14,
-        color: "#333",
-        cursor: "pointer",
-        transition: "0.2s",
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#fff7e6"}
-      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-    >
-      {cnibVersoFile ? cnibVersoFile.name : "Cliquez ici pour télécharger le verso"}
-    </div>
-  </div>
-</div>
-
-
+        {/* Bouton inscription */}
         <button
           onClick={handleRegister}
           disabled={loading}
@@ -219,6 +146,14 @@ export default function RegisterExpediteur() {
           </button>
         </div>
       </div>
+
+      {/* Snackbar */}
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
     </div>
   );
 }

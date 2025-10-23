@@ -1,36 +1,72 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import animationData from "../assets/truck.json";
 import { loginExpediteur } from "../services/authServiceExpediteur";
+import CustomSnackbar from "../components/CustomSnackbar";
 
 export default function LoginExpediteur() {
-  const [telephone, setTelephone] = useState("");
+  const [identifiant, setIdentifiant] = useState("");
   const [motDePasse, setMotDePasse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [erreur, setErreur] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
+
   const navigate = useNavigate();
 
+  // 🚫 Supprimer le token à chaque ouverture de la page login
+  // ✅ Et rediriger seulement si un token encore valide existe (sécurité)
+  useEffect(() => {
+    localStorage.removeItem("token"); // On efface toujours le token dès qu'on revient ici
+  }, []);
+
+  // ✅ Fonction de connexion
   const handleLogin = async () => {
-    if (!telephone || !motDePasse) {
-      setErreur("Veuillez remplir tous les champs");
+    if (!identifiant || !motDePasse) {
+      setSnackbar({
+        open: true,
+        message: "Veuillez remplir tous les champs",
+        severity: "warning",
+      });
       return;
     }
 
     setLoading(true);
-    setErreur("");
     try {
-      const data = await loginExpediteur(telephone, motDePasse);
+      const data = await loginExpediteur(identifiant, motDePasse);
+
+      // Stocker le token dans le localStorage
       localStorage.setItem("token", data.token);
-      navigate("/home", { replace: true });
+
+      // Afficher message succès
+      setSnackbar({
+        open: true,
+        message: "Connexion réussie ✅",
+        severity: "success",
+      });
+
+      // Rediriger après un court délai
+      setTimeout(() => {
+        navigate("/home", { replace: true });
+      }, 1000);
     } catch (e) {
-      setErreur(e.message || "Erreur inconnue. Vérifiez vos identifiants ou connexion.");
+      setSnackbar({
+        open: true,
+        message: e.message || "Erreur de connexion. Vérifiez vos identifiants.",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Style général
   const styles = {
     container: {
       display: "flex",
@@ -59,16 +95,10 @@ export default function LoginExpediteur() {
       borderRadius: 16,
       boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
       textAlign: "center",
+      animation: "fadeIn 0.6s ease-in-out",
     },
     h1: { color: "#ff8800", marginBottom: 8 },
     p: { color: "#666", marginBottom: 20 },
-    errorMsg: {
-      color: "#c00",
-      backgroundColor: "#fdd",
-      padding: 8,
-      borderRadius: 6,
-      marginBottom: 16,
-    },
     inputWrapper: {
       position: "relative",
       width: "100%",
@@ -77,7 +107,7 @@ export default function LoginExpediteur() {
     inputField: {
       width: "100%",
       height: 48,
-      padding: "0 40px 0 12px", // espace pour l'icône à droite
+      padding: "0 40px 0 12px",
       borderRadius: 8,
       border: "2px solid #ff8800",
       outline: "none",
@@ -85,6 +115,7 @@ export default function LoginExpediteur() {
       color: "#000",
       fontSize: 15,
       boxSizing: "border-box",
+      transition: "0.3s",
     },
     togglePassword: {
       position: "absolute",
@@ -107,6 +138,7 @@ export default function LoginExpediteur() {
       cursor: "pointer",
       fontSize: 16,
       marginTop: 8,
+      transition: "0.3s",
     },
     loginBtnDisabled: { opacity: 0.6, cursor: "not-allowed" },
     registerLink: { marginTop: 16 },
@@ -121,75 +153,84 @@ export default function LoginExpediteur() {
   };
 
   return (
-    <div style={styles.container}>
-      {/* Partie gauche animation */}
-      <div style={styles.leftPanel}>
-        <Lottie
-          animationData={animationData}
-          loop={true}
-          style={{ width: "80%", height: "80%" }}
-        />
-      </div>
+    <>
+      <div style={styles.container}>
+        {/* Animation à gauche */}
+        <div style={styles.leftPanel}>
+          <Lottie
+            animationData={animationData}
+            loop={true}
+            style={{ width: "80%", height: "80%" }}
+          />
+        </div>
 
-      {/* Partie droite formulaire */}
-      <div style={styles.rightPanel}>
-        <div style={styles.formBox}>
-          <h1 style={styles.h1}>Connexion Transitaire</h1>
-          <p style={styles.p}>Veuillez entrer vos informations de connexion</p>
+        {/* Formulaire à droite */}
+        <div style={styles.rightPanel}>
+          <div style={styles.formBox}>
+            <h1 style={styles.h1}>Connexion Transitaire</h1>
+            <p style={styles.p}>Connectez-vous avec votre téléphone ou email</p>
 
-          {erreur && <div style={styles.errorMsg}>{erreur}</div>}
+            {/* Champ identifiant */}
+            <div style={styles.inputWrapper}>
+              <input
+                type="text"
+                placeholder="Téléphone ou email"
+                value={identifiant}
+                onChange={(e) => setIdentifiant(e.target.value)}
+                style={styles.inputField}
+              />
+            </div>
 
-          {/* Champ téléphone */}
-          <div style={styles.inputWrapper}>
-            <input
-              type="text"
-              placeholder="Numéro de téléphone"
-              value={telephone}
-              onChange={(e) => setTelephone(e.target.value)}
-              style={styles.inputField}
-            />
-          </div>
+            {/* Champ mot de passe */}
+            <div style={styles.inputWrapper}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={motDePasse}
+                onChange={(e) => setMotDePasse(e.target.value)}
+                placeholder="Mot de passe"
+                style={styles.inputField}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={styles.togglePassword}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
 
-          {/* Champ mot de passe */}
-          <div style={styles.inputWrapper}>
-            <input
-              type={showPassword ? "text" : "password"}
-              value={motDePasse}
-              onChange={(e) => setMotDePasse(e.target.value)}
-              placeholder="Mot de passe"
-              style={styles.inputField}
-            />
+            {/* Bouton connexion */}
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={styles.togglePassword}
+              onClick={handleLogin}
+              disabled={loading}
+              style={
+                loading
+                  ? { ...styles.loginBtn, ...styles.loginBtnDisabled }
+                  : styles.loginBtn
+              }
             >
-              {showPassword ? "🙈" : "👁️"}
+              {loading ? "Connexion..." : "Se connecter"}
             </button>
-          </div>
 
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            style={
-              loading
-                ? { ...styles.loginBtn, ...styles.loginBtnDisabled }
-                : styles.loginBtn
-            }
-          >
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
-
-          <div style={styles.registerLink}>
-            <button
-              onClick={() => navigate("/register", { replace: true })}
-              style={styles.registerButton}
-            >
-              Créer un compte
-            </button>
+            <div style={styles.registerLink}>
+              <button
+                onClick={() => navigate("/register", { replace: true })}
+                style={styles.registerButton}
+              >
+                Créer un compte
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Snackbar global */}
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
+    </>
   );
 }

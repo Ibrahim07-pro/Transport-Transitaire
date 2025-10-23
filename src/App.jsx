@@ -1,23 +1,59 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
 import LoginExpediteur from "./pages/LoginExpediteur";
 import RegisterExpediteur from "./pages/RegisterExpediteur";
 import ExpediteurAccueil from "./pages/HomeExpediteur";
 import MesExpeditionsPage from "./pages/MesExpeditionsPage";
-import DemandesEnAttentePage from "./pages/Propositionpage"; // ✅ nouvelle page
+import DemandesEnAttentePage from "./pages/Propositionpage";
 import Layout from "./components/Layout";
 
-// 🔒 Route protégée (redirige vers la page de connexion si pas de token)
+// 🔒 Route protégée (vérifie le token avant d’autoriser l’accès)
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/" replace />;
 };
 
+// 🚪 Gestion automatique de la déconnexion et du retour
+function TokenWatcher() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    // Si l’utilisateur tente d’aller sur une page protégée sans token
+    const isProtectedRoute =
+      location.pathname !== "/" && location.pathname !== "/register";
+
+    if (isProtectedRoute && !token) {
+      navigate("/", { replace: true });
+    }
+
+    // Si connecté, bloquer le retour à la page de login
+    if (token && (location.pathname === "/" || location.pathname === "/register")) {
+      navigate("/home", { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <Router>
+      {/* 👁️ Surveille le token et les changements de page */}
+      <TokenWatcher />
+
       <Routes>
-        {/* 🔸 Pages publiques (non connectées) */}
+        {/* 🔸 Pages publiques */}
         <Route path="/" element={<LoginExpediteur />} />
         <Route path="/register" element={<RegisterExpediteur />} />
 
@@ -44,7 +80,6 @@ function App() {
           }
         />
 
-        {/* 🔹 Page Demandes en attente (protégée) */}
         <Route
           path="/demandes-en-attente"
           element={

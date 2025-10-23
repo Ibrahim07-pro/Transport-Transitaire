@@ -10,7 +10,6 @@ import {
   Paper,
   styled,
   Autocomplete,
-  Alert,
   Divider,
 } from "@mui/material";
 import { 
@@ -29,6 +28,7 @@ import {
   payerMission,
 } from "../services/expediteurService";
 import axios from "axios";
+import CustomSnackbar from "../components/CustomSnackbar";
 
 // 🎨 Styles premium
 const PremiumPaper = styled(Paper)(() => ({
@@ -92,8 +92,6 @@ export default function ExpediteurAccueil() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [missionsAPayer, setMissionsAPayer] = useState([]);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [form, setForm] = useState({
     adresseDepart: "",
@@ -107,8 +105,14 @@ export default function ExpediteurAccueil() {
 
   const [optionsDepart, setOptionsDepart] = useState([]);
   const [optionsArrivee, setOptionsArrivee] = useState([]);
-
   const token = localStorage.getItem("token");
+
+  // 🎯 Snackbar centralisé
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
   // 📊 Charger les données initiales
   useEffect(() => {
@@ -126,7 +130,7 @@ export default function ExpediteurAccueil() {
       setMissionsAPayer(missionsData);
     } catch (err) {
       console.error("Erreur lors du chargement:", err);
-      setError("Impossible de charger les données");
+      setSnackbar({ open: true, message: "Impossible de charger les données", severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -140,15 +144,11 @@ export default function ExpediteurAccueil() {
     // Calcul automatique acompte/solde
     if (name === "pourcentageAcompte" && value !== "") {
       const val = parseFloat(value);
-      if (!isNaN(val) && val >= 0 && val <= 100) {
-        updated.pourcentageSolde = (100 - val).toString();
-      }
+      if (!isNaN(val) && val >= 0 && val <= 100) updated.pourcentageSolde = (100 - val).toString();
     }
     if (name === "pourcentageSolde" && value !== "") {
       const val = parseFloat(value);
-      if (!isNaN(val) && val >= 0 && val <= 100) {
-        updated.pourcentageAcompte = (100 - val).toString();
-      }
+      if (!isNaN(val) && val >= 0 && val <= 100) updated.pourcentageAcompte = (100 - val).toString();
     }
 
     setForm(updated);
@@ -157,30 +157,25 @@ export default function ExpediteurAccueil() {
   // 📤 Soumettre une nouvelle demande
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    // Validation
     const acompte = parseFloat(form.pourcentageAcompte);
     const solde = parseFloat(form.pourcentageSolde);
     if (acompte + solde !== 100) {
-      setError("La somme de l'acompte et du solde doit être égale à 100%");
+      setSnackbar({ open: true, message: "La somme de l'acompte et du solde doit être égale à 100%", severity: "error" });
       return;
     }
 
     try {
       setSubmitting(true);
       await createDemandeTransport(form, token);
-      setSuccess("✅ Demande créée avec succès !");
+      setSnackbar({ open: true, message: "✅ Demande créée avec succès !", severity: "success" });
       setTimeout(() => {
         setOpen(false);
-        setSuccess("");
         resetForm();
-        fetchAllData(); // Rafraîchir les stats
+        fetchAllData();
       }, 1500);
     } catch (err) {
       console.error(err);
-      setError("❌ Échec de la création de la demande");
+      setSnackbar({ open: true, message: "❌ Échec de la création de la demande", severity: "error" });
     } finally {
       setSubmitting(false);
     }
@@ -219,7 +214,7 @@ export default function ExpediteurAccueil() {
     }
   };
 
-  // 💳 Composant carte de notification
+  // 💳 Notification pour paiement
   const NotificationCard = ({ mission, onPaiementReussi }) => {
     const [otpOpen, setOtpOpen] = useState(false);
     const [otp, setOtp] = useState("");
@@ -232,23 +227,21 @@ export default function ExpediteurAccueil() {
 
     const handleVerifyOtp = async () => {
       if (otp !== OTP_CORRECT) {
-        setError("❌ Code OTP incorrect");
+        setSnackbar({ open: true, message: "❌ Code OTP incorrect", severity: "error" });
         return;
       }
 
       try {
         setProcessing(true);
         await payerMission(mission.missionId, montant, isAcompte, token);
-        setSuccess(`✅ Paiement de ${montant} FCFA validé !`);
         setPaiementEffectue(true);
         setOtpOpen(false);
         setOtp("");
-        setTimeout(() => {
-          onPaiementReussi();
-        }, 1000);
+        setSnackbar({ open: true, message: `✅ Paiement de ${montant.toLocaleString()} FCFA validé !`, severity: "success" });
+        setTimeout(() => onPaiementReussi(), 1000);
       } catch (err) {
         console.error(err);
-        setError("❌ Erreur lors du paiement");
+        setSnackbar({ open: true, message: "❌ Erreur lors du paiement", severity: "error" });
       } finally {
         setProcessing(false);
       }
@@ -363,7 +356,6 @@ export default function ExpediteurAccueil() {
     );
   };
 
-  // 🎯 Icônes pour les stats
   const getStatIcon = (key) => {
     if (key === "livrees") return <CheckCircle sx={{ color: "#4CAF50", fontSize: 40 }} />;
     if (key === "annulees") return <Cancel sx={{ color: "#f44336", fontSize: 40 }} />;
@@ -396,20 +388,7 @@ export default function ExpediteurAccueil() {
 
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1200, mx: "auto" }}>
-      {/* Titre principal */}
       <SectionTitle variant="h4">Espace Expéditeur</SectionTitle>
-
-      {/* Alertes globales */}
-      {error && (
-        <Alert severity="error" onClose={() => setError("")} sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-      {success && (
-        <Alert severity="success" onClose={() => setSuccess("")} sx={{ mb: 3 }}>
-          {success}
-        </Alert>
-      )}
 
       {/* Boutons d'action */}
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mb: 5, flexWrap: "wrap" }}>
@@ -466,6 +445,7 @@ export default function ExpediteurAccueil() {
         ))}
       </Grid>
 
+      {/* Modals et CustomSnackbar */}
       {/* Modal création demande */}
       <Modal open={open} onClose={() => !submitting && setOpen(false)}>
         <Box
@@ -490,9 +470,6 @@ export default function ExpediteurAccueil() {
               Nouvelle Demande
             </Typography>
           </Box>
-
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
           {/* Itinéraire */}
           <Box mb={3}>
@@ -662,9 +639,6 @@ export default function ExpediteurAccueil() {
             🔔 Notifications de Paiement
           </Typography>
 
-          {error && <Alert severity="error" onClose={() => setError("")} sx={{ mb: 2 }}>{error}</Alert>}
-          {success && <Alert severity="success" onClose={() => setSuccess("")} sx={{ mb: 2 }}>{success}</Alert>}
-
           {missionsAPayer.length === 0 ? (
             <Box textAlign="center" py={4}>
               <Notifications sx={{ fontSize: 60, color: "text.disabled", mb: 2 }} />
@@ -683,6 +657,14 @@ export default function ExpediteurAccueil() {
           )}
         </Box>
       </Modal>
+
+      {/* CustomSnackbar */}
+      <CustomSnackbar
+        open={snackbar.open}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        severity={snackbar.severity}
+      />
     </Box>
   );
 }
