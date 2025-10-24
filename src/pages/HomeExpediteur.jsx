@@ -486,25 +486,18 @@ export default function ExpediteurAccueil() {
             </Typography>
             <Box display="flex" flexDirection="column" gap={2}>
               <Autocomplete
-              freeSolo
-              options={optionsDepart}
-              getOptionLabel={(option) => option.label || ""}
-              renderOption={(props, option) => (
-                <li {...props} key={option.id}>
-                  {option.label}
-                </li>
-              )}
-              value={form.adresseDepart}
-              onInputChange={(_, value) => {
-                setForm({ ...form, adresseDepart: value });
-                rechercherLieu(value, setOptionsDepart);
-              }}
-              renderInput={(params) => (
-                <TextField {...params} label="Adresse de départ" required fullWidth />
-              )}
-              disabled={submitting}
+                freeSolo
+                options={optionsDepart}
+                value={form.adresseDepart}
+                onInputChange={(_, value) => {
+                  setForm({ ...form, adresseDepart: value });
+                  rechercherLieu(value, setOptionsDepart);
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Adresse de départ" required fullWidth />
+                )}
+                disabled={submitting}
               />
-
               <Autocomplete
                 freeSolo
                 options={optionsArrivee}
