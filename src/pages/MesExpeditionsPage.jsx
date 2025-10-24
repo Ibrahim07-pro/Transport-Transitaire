@@ -59,41 +59,34 @@ export default function MesExpeditionsPage({ token }) {
 
   // Traduction des statuts
   const getReadableStatus = (statut) => {
-    switch (statut) {
-      case "TERMINEE":
-        return { label: "Livraison terminée", color: "success" };
-      case "EN_ATTENTE_PAIEMENT_SOLDE":
-        return { label: "Paiement du solde en attente", color: "warning" };
-      case "SOLDE_PAYE":
-        return { label: "Solde payé", color: "info" };
-      case "CHARGEMENT_EFFECTUE":
-        return { label: "Chargement effectué", color: "primary" };
-      case "CHAUFFEUR_ASSIGNE":
-        return { label: "Chauffeur assigné", color: "secondary" };
-      case "ACCEPTEE":
-        return { label: "Demande acceptée", color: "info" };
-      default:
-        return { label: "En attente de validation", color: "default" };
-    }
-  };
+  switch (statut) {
+    case "ACCEPTEE": return { label: "Demande acceptée", color: "info" };
+    case "CHAUFFEUR_ASSIGNE": return { label: "Chauffeur assigné", color: "secondary" };
+    case "ACOMPTE_PAYE": return { label: "Acompte payé", color: "warning" };
+    case "CHARGEMENT_EFFECTUE": return { label: "Chargement effectué", color: "primary" };
+    case "DECHARGEMENT_EN_ATTENTE": return { label: "Déchargement en attente", color: "info" };
+    case "EN_ATTENTE_PAIEMENT_SOLDE": return { label: "Paiement solde en attente", color: "warning" };
+    case "TERMINEE": return { label: "Livraison terminée", color: "success" };
+    case "ANNULEE": return { label: "Mission annulée", color: "error" };
+    default: return { label: "En attente", color: "default" };
+  }
+};
+
 
   // Étape de progression
   const getProgressStep = (statut) => {
-    switch (statut) {
-      case "ACCEPTEE":
-        return 0;
-      case "CHAUFFEUR_ASSIGNE":
-        return 1;
-      case "CHARGEMENT_EFFECTUE":
-        return 2;
-      case "SOLDE_PAYE":
-        return 3;
-      case "TERMINEE":
-        return 4;
-      default:
-        return 0;
-    }
-  };
+  switch (statut) {
+    case "ACCEPTEE": return 0;
+    case "CHAUFFEUR_ASSIGNE": return 1;
+    case "ACOMPTE_PAYE": return 2;
+    case "CHARGEMENT_EFFECTUE": return 3;
+    case "DECHARGEMENT_EN_ATTENTE": return 4;
+    case "EN_ATTENTE_PAIEMENT_SOLDE": return 5;
+    case "TERMINEE": return 6;
+    default: return 0;
+  }
+};
+
 
   // ✅ Envoi de la note
   const handleNoter = async () => {
@@ -246,42 +239,41 @@ export default function MesExpeditionsPage({ token }) {
 
                       {/* Barre de progression et bouton */}
                       <Box mt={2}>
-                        <Stepper
-                          activeStep={activeStep}
-                          alternativeLabel
-                          sx={{
-                            "& .MuiStepLabel-label": { fontSize: "0.65rem" },
-                            "& .MuiStepIcon-root.Mui-active": { color: primaryColor },
-                            "& .MuiStepIcon-root.Mui-completed": { color: "#4CAF50" },
-                            "& .MuiStepIcon-root": { width: 28, height: 28 },
-                            "& .MuiStep-root": { padding: 0 },
-                          }}
-                        >
-                          {["Acceptée", "Chauffeur", "Chargement", "Solde", "Livrée"].map(
-                            (label) => (
-                              <Step key={label}>
-                                <StepLabel>{label}</StepLabel>
-                              </Step>
-                            )
-                          )}
-                        </Stepper>
+<Stepper 
+  activeStep={activeStep} 
+  alternativeLabel 
+  sx={{
+    "& .MuiStepLabel-label": { fontSize: "0.65rem" },
+    "& .MuiStepIcon-root.Mui-active": { color: primaryColor },
+    "& .MuiStepIcon-root.Mui-completed": { color: "#4CAF50" }, // vert pour étapes complétées
+    "& .MuiStepIcon-root": { width: 28, height: 28 },
+    "& .MuiStep-root": { padding: 0 },
+  }}
+>
+  {["Acceptée","Chauffeur","Acompte","Chargement","Déchargement","Paiement solde","Livrée"].map((label, index) => (
+    <Step key={label} completed={activeStep > index || mission.statut === "TERMINEE"}>
+      <StepLabel>{label}</StepLabel>
+    </Step>
+  ))}
+</Stepper>
 
-                        {mission.statut === "TERMINEE" && (
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            sx={{
-                              mt: 1.5,
-                              textTransform: "none",
-                              borderRadius: 2,
-                              backgroundColor: primaryColor,
-                              "&:hover": { backgroundColor: "#e65c00" },
-                            }}
-                            onClick={() => setSelectedMission(mission)}
-                          >
-                            Noter la mission
-                          </Button>
-                        )}
+{mission.statut === "TERMINEE" && !selectedMission && !mission.noted && ( // bouton caché si déjà noté
+  <Button
+    fullWidth
+    variant="contained"
+    sx={{
+      mt: 1.5,
+      textTransform: "none",
+      borderRadius: 2,
+      backgroundColor: primaryColor,
+      "&:hover": { backgroundColor: "#e65c00" },
+    }}
+    onClick={() => setSelectedMission(mission)}
+  >
+    Noter la mission
+  </Button>
+)}
+
                       </Box>
                     </CardContent>
                   </Card>

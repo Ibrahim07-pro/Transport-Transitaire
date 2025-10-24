@@ -204,14 +204,22 @@ export default function ExpediteurAccueil() {
     try {
       const encodedQuery = encodeURIComponent(query + " Burkina Faso");
       const url = `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=8&addressdetails=1`;
-      const res = await axios.get(url, {
-        headers: { "User-Agent": "TransportApp/1.0" },
-      });
-      setter(res.data.map((e) => e.display_name));
-    } catch (err) {
-      console.error("Erreur autocomplétion:", err);
-      setter([]);
-    }
+
+      // ✅ Ne pas mettre le header "User-Agent" côté navigateur
+      const res = await axios.get(url);
+
+      // ✅ Retourner des objets avec label + id pour éviter les doublons de key
+      setter(
+     res.data.map((e) => ({
+      label: e.display_name,
+      id: e.place_id, // place_id est unique
+    }))
+  );
+} catch (err) {
+  console.error("Erreur autocomplétion:", err);
+  setter([]);
+}
+
   };
 
   // 💳 Notification pour paiement
@@ -478,18 +486,25 @@ export default function ExpediteurAccueil() {
             </Typography>
             <Box display="flex" flexDirection="column" gap={2}>
               <Autocomplete
-                freeSolo
-                options={optionsDepart}
-                value={form.adresseDepart}
-                onInputChange={(_, value) => {
-                  setForm({ ...form, adresseDepart: value });
-                  rechercherLieu(value, setOptionsDepart);
-                }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Adresse de départ" required fullWidth />
-                )}
-                disabled={submitting}
+              freeSolo
+              options={optionsDepart}
+              getOptionLabel={(option) => option.label || ""}
+              renderOption={(props, option) => (
+                <li {...props} key={option.id}>
+                  {option.label}
+                </li>
+              )}
+              value={form.adresseDepart}
+              onInputChange={(_, value) => {
+                setForm({ ...form, adresseDepart: value });
+                rechercherLieu(value, setOptionsDepart);
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Adresse de départ" required fullWidth />
+              )}
+              disabled={submitting}
               />
+
               <Autocomplete
                 freeSolo
                 options={optionsArrivee}
