@@ -119,38 +119,55 @@ export default function MesExpeditionsPage({ token }) {
   return (
     <>
       <Box sx={{ p: 3, minHeight: "100vh", backgroundColor: "#fafafa" }}>
-        {/* Image et Titre */}
-        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 4 }}>
-          <Box
-            component="img"
-            src={expeditionsImg}
-            alt="Expéditions"
-            sx={{ width: 80, height: 80, mb: 2, objectFit: "contain" }}
-          />
+{/* ✅ En-tête fixe */}
+<Box
+  sx={{
+    position: "sticky",
+    top: 0,
+    zIndex: 10,
+    backgroundColor: "#fafafa", // pour éviter que le fond soit transparent
+    pb: 2,
+    pt: 2,
+  }}
+>
+  <Box
+    sx={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+    }}
+  >
+    <Box
+      component="img"
+      src={expeditionsImg}
+      alt="Expéditions"
+      sx={{ width: 80, height: 80, mb: 1, objectFit: "contain" }}
+    />
 
-          {/* Ligne décorative + titre */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              width: "100%",
-              justifyContent: "center",
-              gap: 3,
-              mb: 2,
-            }}
-          >
-            <Box sx={{ flex: 1, height: 2, backgroundColor: primaryColor }} />
-            <Typography
-              variant="h5"
-              fontWeight="bold"
-              color={primaryColor}
-              sx={{ whiteSpace: "nowrap" }}
-            >
-              MES EXPÉDITIONS
-            </Typography>
-            <Box sx={{ flex: 1, height: 2, backgroundColor: primaryColor }} />
-          </Box>
-        </Box>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        width: "100%",
+        justifyContent: "center",
+        gap: 3,
+        mb: 1,
+      }}
+    >
+      <Box sx={{ flex: 1, height: 2, backgroundColor: primaryColor }} />
+      <Typography
+        variant="h5"
+        fontWeight="bold"
+        color={primaryColor}
+        sx={{ whiteSpace: "nowrap" }}
+      >
+        MES EXPÉDITIONS
+      </Typography>
+      <Box sx={{ flex: 1, height: 2, backgroundColor: primaryColor }} />
+    </Box>
+  </Box>
+</Box>
+
 
         {loading ? (
           <Box textAlign="center" mt={10}>

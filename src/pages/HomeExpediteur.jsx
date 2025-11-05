@@ -39,18 +39,38 @@ const PremiumPaper = styled(Paper)(() => ({
   background: "white",
 }));
 
-const StatCard = styled(PremiumPaper)(() => ({
+// 🌟 Design harmonieux et premium pour les cartes de stats
+const StatCard = styled(Paper)(({ theme }) => ({
   display: "flex",
-  flexDirection: "column",
   alignItems: "center",
-  padding: 24,
-  textAlign: "center",
-  transition: "transform 0.3s ease, box-shadow 0.3s ease",
+  justifyContent: "space-between",
+  width: "100%",
+  minHeight: 140,
+  padding: theme.spacing(4),
+  borderRadius: 24,
+  background: "linear-gradient(135deg, #fff8f2 0%, #ffffff 100%)",
+  boxShadow: "0 10px 35px rgba(255, 109, 0, 0.08)",
+  transition: "all 0.3s ease",
+  position: "relative",
+  overflow: "hidden",
+  gap: theme.spacing(1.5),
   "&:hover": {
-    transform: "translateY(-5px)",
-    boxShadow: "0 12px 40px rgba(0, 0, 0, 0.1)",
+    transform: "translateY(-4px)",
+    boxShadow: "0 14px 40px rgba(255, 109, 0, 0.15)",
+  },
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    height: "6px",
+    borderBottomLeftRadius: "24px",
+    borderBottomRightRadius: "24px",
+    background: "linear-gradient(90deg, #FF6D00, #FFA000)",
   },
 }));
+
 
 const NotificationCardPaper = styled(PremiumPaper)(({ theme }) => ({
   padding: theme.spacing(2.5),
@@ -75,7 +95,7 @@ const SectionTitle = styled(Typography)(() => ({
   "&:after": {
     content: '""',
     display: "block",
-    width: "80px",
+    width: "300px",
     height: "4px",
     background: "#FF6D00",
     margin: "16px auto 0",
@@ -222,151 +242,205 @@ export default function ExpediteurAccueil() {
 
   };
 
-  // 💳 Notification pour paiement
-  const NotificationCard = ({ mission, onPaiementReussi }) => {
-    const [otpOpen, setOtpOpen] = useState(false);
-    const [otp, setOtp] = useState("");
-    const [processing, setProcessing] = useState(false);
-    const [paiementEffectue, setPaiementEffectue] = useState(false);
+// 💳 Notification pour paiement - SECTION CORRIGÉE
+const NotificationCard = ({ mission, onPaiementReussi }) => {
+  const [otpOpen, setOtpOpen] = useState(false);
+  const [numeroClient, setNumeroClient] = useState("");
+  const [otp, setOtp] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [paiementEffectue, setPaiementEffectue] = useState(false);
 
-    const isAcompte = mission.statut.toUpperCase() === "EN_ATTENTE_PAIEMENT_ACOMPTE";
-    const montant = isAcompte ? mission.montantAcompte : mission.montantSolde;
-    const OTP_CORRECT = "123456";
+  const isAcompte = mission.statut.toUpperCase() === "EN_ATTENTE_PAIEMENT_ACOMPTE";
+  const montant = isAcompte ? mission.montantAcompte : mission.montantSolde;
+  const OTP_CORRECT = "123456";
 
-    const handleVerifyOtp = async () => {
-      if (otp !== OTP_CORRECT) {
-        setSnackbar({ open: true, message: "❌ Code OTP incorrect", severity: "error" });
-        return;
-      }
+  const handleVerifyOtp = async () => {
+    if (otp !== OTP_CORRECT) {
+      setSnackbar({ open: true, message: "❌ Code OTP incorrect", severity: "error" });
+      return;
+    }
 
-      try {
-        setProcessing(true);
-        await payerMission(mission.missionId, montant, isAcompte, token);
-        setPaiementEffectue(true);
-        setOtpOpen(false);
-        setOtp("");
-        setSnackbar({ open: true, message: `✅ Paiement de ${montant.toLocaleString()} FCFA validé !`, severity: "success" });
-        setTimeout(() => onPaiementReussi(), 1000);
-      } catch (err) {
-        console.error(err);
-        setSnackbar({ open: true, message: "❌ Erreur lors du paiement", severity: "error" });
-      } finally {
-        setProcessing(false);
-      }
-    };
-
-    return (
-      <>
-        <NotificationCardPaper>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start">
-            <Box display="flex" alignItems="center" gap={1}>
-              <LocalShipping sx={{ color: primaryColor }} />
-              <Typography fontWeight="bold" variant="subtitle1">
-                Mission #{mission.missionId}
-              </Typography>
-            </Box>
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={paiementEffectue ? <CheckCircle /> : <Paid />}
-              sx={{
-                backgroundColor: paiementEffectue ? "#4CAF50" : primaryColor,
-                "&:hover": {
-                  backgroundColor: paiementEffectue ? "#45a049" : "#E65100",
-                },
-                textTransform: "none",
-                fontWeight: 600,
-              }}
-              onClick={() => setOtpOpen(true)}
-              disabled={paiementEffectue}
-            >
-              {paiementEffectue ? "Payé" : "Payer"}
-            </Button>
-          </Box>
-
-          <Divider />
-
-          <Box display="flex" flexDirection="column" gap={0.5}>
-            <Typography variant="body2" color="text.secondary">
-              📍 <strong>Départ:</strong> {mission.adresseDepart}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              🎯 <strong>Arrivée:</strong> {mission.adresseArrivee}
-            </Typography>
-            <Typography variant="body2" fontWeight="bold" color={primaryColor} mt={1}>
-              💰 {montant.toLocaleString()} FCFA ({isAcompte ? "Acompte" : "Solde"})
-            </Typography>
-          </Box>
-        </NotificationCardPaper>
-
-        {/* Modal OTP */}
-        <Modal open={otpOpen} onClose={() => !processing && setOtpOpen(false)}>
-          <Box
-            sx={{
-              backgroundColor: "white",
-              p: 4,
-              borderRadius: 3,
-              maxWidth: 400,
-              mx: "auto",
-              mt: 20,
-              boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
-            }}
-          >
-            <Typography
-              variant="h6"
-              color={primaryColor}
-              fontWeight={700}
-              mb={3}
-              textAlign="center"
-            >
-              🔐 Validation du paiement
-            </Typography>
-            <Typography variant="body2" color="text.secondary" mb={2} textAlign="center">
-              Saisissez le code OTP pour valider le paiement de{" "}
-              <strong>{montant.toLocaleString()} FCFA</strong>
-            </Typography>
-            <TextField
-              fullWidth
-              label="Code OTP"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              placeholder="123456"
-              margin="normal"
-              disabled={processing}
-              inputProps={{ maxLength: 6 }}
-            />
-            <Box display="flex" gap={2} mt={3}>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => setOtpOpen(false)}
-                disabled={processing}
-                sx={{ borderColor: primaryColor, color: primaryColor }}
-              >
-                Annuler
-              </Button>
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={handleVerifyOtp}
-                disabled={processing || otp.length < 6}
-                sx={{
-                  backgroundColor: primaryColor,
-                  "&:hover": { backgroundColor: "#E65100" },
-                }}
-              >
-                {processing ? <CircularProgress size={24} /> : "Valider"}
-              </Button>
-            </Box>
-          </Box>
-        </Modal>
-      </>
-    );
+    try {
+      setProcessing(true);
+      
+      // ✅ CORRECTION : Ajout de numeroClient et otp comme paramètres
+      await payerMission(
+        mission.missionId, 
+        montant, 
+        numeroClient,  // ← Ajouté
+        otp,          // ← Ajouté
+        isAcompte, 
+        token
+      );
+      
+      setPaiementEffectue(true);
+      setOtpOpen(false);
+      setOtp("");
+      setNumeroClient(""); // Reset du numéro
+      setSnackbar({ 
+        open: true, 
+        message: `✅ Paiement de ${montant.toLocaleString()} FCFA validé !`, 
+        severity: "success" 
+      });
+      setTimeout(() => onPaiementReussi(), 1000);
+    } catch (err) {
+      console.error(err);
+      setSnackbar({ 
+        open: true, 
+        message: err.response?.data?.message || "❌ Erreur lors du paiement", 
+        severity: "error" 
+      });
+    } finally {
+      setProcessing(false);
+    }
   };
 
+  return (
+    <>
+      <NotificationCardPaper>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+          <Box display="flex" alignItems="center" gap={1}>
+            <LocalShipping sx={{ color: primaryColor }} />
+            <Typography fontWeight="bold" variant="subtitle1">
+              Mission #{mission.missionId}
+            </Typography>
+          </Box>
+          <Button
+            size="small"
+            variant="contained"
+            startIcon={paiementEffectue ? <CheckCircle /> : <Paid />}
+            sx={{
+              backgroundColor: paiementEffectue ? "#4CAF50" : primaryColor,
+              "&:hover": {
+                backgroundColor: paiementEffectue ? "#45a049" : "#E65100",
+              },
+              textTransform: "none",
+              fontWeight: 600,
+            }}
+            onClick={() => setOtpOpen(true)}
+            disabled={paiementEffectue}
+          >
+            {paiementEffectue ? "Payé" : "Payer"}
+          </Button>
+        </Box>
+
+        <Divider />
+
+        <Box display="flex" flexDirection="column" gap={0.5}>
+          <Typography variant="body2" color="text.secondary">
+            📍 <strong>Départ:</strong> {mission.adresseDepart}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            🎯 <strong>Arrivée:</strong> {mission.adresseArrivee}
+          </Typography>
+          <Typography variant="body2" fontWeight="bold" color={primaryColor} mt={1}>
+            💰 {montant.toLocaleString()} FCFA ({isAcompte ? "Acompte" : "Solde"})
+          </Typography>
+        </Box>
+      </NotificationCardPaper>
+
+      {/* Modal OTP */}
+      <Modal open={otpOpen} onClose={() => !processing && setOtpOpen(false)}>
+        <Box
+          sx={{
+            backgroundColor: "white",
+            p: 4,
+            borderRadius: 3,
+            maxWidth: 400,
+            mx: "auto",
+            mt: 20,
+            boxShadow: "0 12px 48px rgba(0,0,0,0.3)",
+          }}
+        >
+          <Typography
+            variant="h6"
+            color={primaryColor}
+            fontWeight={700}
+            mb={3}
+            textAlign="center"
+          >
+            🔐 Validation du paiement
+          </Typography>
+
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            mb={3}
+            textAlign="center"
+          >
+            Saisissez votre numéro et le code OTP pour valider le paiement.
+          </Typography>
+
+          {/* Montant affiché automatiquement */}
+          <TextField
+            fullWidth
+            label="Montant à payer (FCFA)"
+            value={montant.toLocaleString()}
+            disabled
+            margin="normal"
+          />
+
+          {/* Numéro client */}
+          <TextField
+            fullWidth
+            label="Numéro de téléphone (client)"
+            placeholder="Ex: 70XXXXXXX"
+            value={numeroClient}
+            onChange={(e) => setNumeroClient(e.target.value)}
+            margin="normal"
+            type="tel"
+            disabled={processing}
+            inputProps={{ maxLength: 8 }}
+          />
+
+          {/* Code OTP */}
+          <TextField
+            fullWidth
+            label="Code OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            placeholder="123456"
+            margin="normal"
+            disabled={processing}
+            inputProps={{ maxLength: 6 }}
+          />
+
+          <Box display="flex" gap={2} mt={3}>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => {
+                setOtpOpen(false);
+                setNumeroClient("");
+                setOtp("");
+              }}
+              disabled={processing}
+              sx={{ borderColor: primaryColor, color: primaryColor }}
+            >
+              Annuler
+            </Button>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={handleVerifyOtp}
+              disabled={processing || otp.length < 6 || numeroClient.length < 8}
+              sx={{
+                backgroundColor: primaryColor,
+                "&:hover": { backgroundColor: "#E65100" },
+              }}
+            >
+              {processing ? <CircularProgress size={24} /> : "Valider"}
+            </Button>
+          </Box>
+        </Box>
+      </Modal>
+    </>
+  );
+};
+
   const getStatIcon = (key) => {
-    if (key === "livrees") return <CheckCircle sx={{ color: "#4CAF50", fontSize: 40 }} />;
-    if (key === "annulees") return <Cancel sx={{ color: "#f44336", fontSize: 40 }} />;
+    if (key === "livrees") return <CheckCircle sx={{ color: primaryColor, fontSize: 40 }} />;
+    if (key === "annulees") return <Cancel sx={{ color: primaryColor, fontSize: 40 }} />;
     return <Assignment sx={{ color: primaryColor, fontSize: 40 }} />;
   };
 
@@ -437,7 +511,14 @@ export default function ExpediteurAccueil() {
       <SectionTitle variant="h5">Mes Statistiques</SectionTitle>
       <Grid container spacing={3} justifyContent="center" sx={{ mb: 5 }}>
         {Object.entries(stats).map(([key, value]) => (
-          <Grid item xs={12} sm={6} md={4} key={key}>
+          <Grid 
+          container 
+          spacing={{ xs: 3, sm: 4, md: 5 }} 
+          justifyContent="center" 
+          alignItems="stretch" 
+          sx={{ mb: 6 }}
+        >
+
             <StatCard>
               <Box display="flex" alignItems="center" mb={2}>
                 {getStatIcon(key)}
