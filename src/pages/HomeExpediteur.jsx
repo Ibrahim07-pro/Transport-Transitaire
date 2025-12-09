@@ -253,14 +253,9 @@ export default function ExpediteurAccueil() {
 
     const isAcompte = mission.statut.toUpperCase() === "EN_ATTENTE_PAIEMENT_ACOMPTE";
     const montant = isAcompte ? mission.montantAcompte : mission.montantSolde;
-    const OTP_CORRECT = "123456";
 
     const handleVerifyOtp = async () => {
-      if (otp !== OTP_CORRECT) {
-        setSnackbar({ open: true, message: "❌ Code OTP incorrect", severity: "error" });
-        return;
-      }
-
+      // Removed frontend OTP validation - backend will validate it
       try {
         setProcessing(true);
 
