@@ -13,6 +13,7 @@ import RegisterExpediteur from "./pages/RegisterExpediteur";
 import ExpediteurAccueil from "./pages/HomeExpediteur";
 import MesExpeditionsPage from "./pages/MesExpeditionsPage";
 import DemandesEnAttentePage from "./pages/Propositionpage";
+import PaymentPage from "./pages/PaymentPage";
 import Layout from "./components/Layout";
 
 // 🔒 Route protégée (vérifie le token avant d’autoriser l’accès)
@@ -86,6 +87,17 @@ function App() {
             <PrivateRoute>
               <Layout>
                 <DemandesEnAttentePage token={localStorage.getItem("token")} />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/payment"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <PaymentPage />
               </Layout>
             </PrivateRoute>
           }
